@@ -13,8 +13,12 @@ export default function ResetPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await resetPassword(email);
+    const { error } = await resetPassword(email);
     setLoading(false);
+    if (error) {
+      setSent(false);
+      return;
+    }
     setSent(true);
   };
 

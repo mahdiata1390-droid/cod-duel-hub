@@ -31,10 +31,53 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+create extension if not exists pg_trgm;
 create index if not exists profiles_username_idx on public.profiles using gin (username gin_trgm_ops);
 create index if not exists profiles_cod_nickname_idx on public.profiles using gin (cod_nickname gin_trgm_ops);
 create index if not exists profiles_cod_uid_idx on public.profiles (cod_uid);
-create extension if not exists pg_trgm;
+
+-- Auto-create a profile whenever a new auth user signs up. The client
+-- passes username / cod_nickname / cod_uid in raw_user_meta_data, and
+-- the trigger copies them into the matching public.profiles row.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (
+    id,
+    username,
+    cod_nickname,
+    cod_uid,
+    avatar_url,
+    bio,
+    rank,
+    country,
+    last_seen_at
+  )
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'username', 'user_' || substr(new.id::text, 1, 8)),
+    coalesce(new.raw_user_meta_data ->> 'cod_nickname', ''),
+    coalesce(new.raw_user_meta_data ->> 'cod_uid', ''),
+    null,
+    null,
+    null,
+    null,
+    now()
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 -- ---------------------------------------------------------------------
 -- friend_requests / friendships
@@ -61,7 +104,11 @@ create table if not exists public.friendships (
 
 -- When a friend request is accepted, materialize a friendship row.
 create or replace function public.handle_friend_request_accepted()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
   if new.status = 'accepted' and old.status = 'pending' then
     insert into public.friendships (user_a, user_b)
@@ -70,7 +117,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_friend_request_accepted on public.friend_requests;
 create trigger on_friend_request_accepted
@@ -103,6 +150,44 @@ create table if not exists public.messages (
 );
 
 create index if not exists messages_conversation_idx on public.messages (conversation_id, created_at);
+
+create or replace function public.start_direct_conversation(other_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_user_id uuid := auth.uid();
+  existing_conversation_id uuid;
+  new_conversation_id uuid;
+begin
+  if current_user_id is null or other_user_id is null or current_user_id = other_user_id then
+    raise exception 'invalid conversation participants';
+  end if;
+
+  select c.id
+  into existing_conversation_id
+  from public.conversations c
+  join public.conversation_members cm1 on cm1.conversation_id = c.id and cm1.user_id = current_user_id
+  join public.conversation_members cm2 on cm2.conversation_id = c.id and cm2.user_id = other_user_id
+  where c.is_group = false
+  limit 1;
+
+  if existing_conversation_id is not null then
+    return existing_conversation_id;
+  end if;
+
+  insert into public.conversations (is_group)
+  values (false)
+  returning id into new_conversation_id;
+
+  insert into public.conversation_members (conversation_id, user_id)
+  values (new_conversation_id, current_user_id), (new_conversation_id, other_user_id);
+
+  return new_conversation_id;
+end;
+$$;
 
 -- Enable Realtime on messages + notifications (safe to re-run).
 alter publication supabase_realtime add table public.messages;
@@ -146,7 +231,11 @@ create table if not exists public.duel_confirmations (
 -- policies.sql).
 -- ---------------------------------------------------------------------
 create or replace function public.handle_duel_confirmation()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   duel_row public.duels%rowtype;
   other_confirmation public.duel_confirmations%rowtype;
@@ -204,7 +293,7 @@ begin
 
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_duel_confirmation on public.duel_confirmations;
 create trigger on_duel_confirmation
@@ -234,7 +323,11 @@ create index if not exists notifications_user_idx on public.notifications (user_
 -- client can never fabricate a notification on someone else's behalf.
 -- ---------------------------------------------------------------------
 create or replace function public.notify_friend_request()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
   if tg_op = 'INSERT' then
     insert into public.notifications (user_id, type, payload)
@@ -250,7 +343,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_friend_request_notify on public.friend_requests;
 create trigger on_friend_request_notify
@@ -258,7 +351,11 @@ create trigger on_friend_request_notify
   for each row execute function public.notify_friend_request();
 
 create or replace function public.notify_duel_event()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
   if tg_op = 'INSERT' then
     insert into public.notifications (user_id, type, payload)
@@ -277,7 +374,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_duel_notify on public.duels;
 create trigger on_duel_notify
@@ -285,7 +382,11 @@ create trigger on_duel_notify
   for each row execute function public.notify_duel_event();
 
 create or replace function public.notify_duel_confirmation()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   duel_row public.duels%rowtype;
   other_user uuid;
@@ -298,7 +399,7 @@ begin
     (select username from public.profiles where id = new.user_id)));
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_duel_confirmation_notify on public.duel_confirmations;
 create trigger on_duel_confirmation_notify
@@ -306,7 +407,11 @@ create trigger on_duel_confirmation_notify
   for each row execute function public.notify_duel_confirmation();
 
 create or replace function public.notify_new_message()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   member record;
 begin
@@ -320,7 +425,7 @@ begin
   end loop;
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_new_message_notify on public.messages;
 create trigger on_new_message_notify
