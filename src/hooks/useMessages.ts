@@ -27,7 +27,7 @@ export function useConversations() {
       .select("conversation_id, last_read_at")
       .eq("user_id", user.id);
 
-    const conversationIds = (memberships ?? []).map((m) => m.conversation_id);
+    const conversationIds = (memberships ?? []).map((m: any) => m.conversation_id);
     if (conversationIds.length === 0) {
       setConversations([]);
       setLoading(false);
@@ -46,12 +46,12 @@ export function useConversations() {
       .in("conversation_id", conversationIds)
       .order("created_at", { ascending: false });
 
-    const rows: ConversationRow[] = conversationIds.map((id) => {
-      const otherMember = (members as any[] | null)?.find((m) => m.conversation_id === id);
+    const rows: ConversationRow[] = conversationIds.map((id: string) => {
+      const otherMember = (members as any[] | null)?.find((m: any) => m.conversation_id === id);
       const conversationMessages = (messages as Message[] | null)?.filter(
-        (m) => m.conversation_id === id
+        (m: Message) => m.conversation_id === id
       );
-      const lastReadAt = memberships?.find((m) => m.conversation_id === id)?.last_read_at;
+      const lastReadAt = memberships?.find((m: any) => m.conversation_id === id)?.last_read_at;
       const unreadCount = (conversationMessages ?? []).filter(
         (m) =>
           m.sender_id !== user.id &&
@@ -108,7 +108,7 @@ export function useMessages(conversationId: string | undefined) {
       .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data }: { data: any[] | null }) => {
         setMessages((data as Message[]) ?? []);
         setLoading(false);
       });
@@ -119,7 +119,7 @@ export function useMessages(conversationId: string | undefined) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
+        (payload: any) => {
           setMessages((prev) => [...prev, payload.new as Message]);
         }
       )

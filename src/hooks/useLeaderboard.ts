@@ -22,7 +22,7 @@ export function useLeaderboard(sort: LeaderboardSort) {
       .select("*")
       .order(sortColumn[sort], { ascending: false })
       .limit(100)
-      .then(({ data }) => {
+      .then(({ data }: { data: any[] | null }) => {
         let rows = (data as Profile[]) ?? [];
         if (sort === "winRate") {
           rows = [...rows].sort((a, b) => winRate(b) - winRate(a));

@@ -21,7 +21,7 @@ export function useNotifications() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50)
-      .then(({ data }) => {
+      .then(({ data }: { data: any[] | null }) => {
         setNotifications((data as AppNotification[]) ?? []);
         setLoading(false);
       });
@@ -31,7 +31,7 @@ export function useNotifications() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
+        (payload: any) => {
           setNotifications((prev) => [payload.new as AppNotification, ...prev]);
         }
       )

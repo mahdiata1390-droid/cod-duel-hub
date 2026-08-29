@@ -62,8 +62,8 @@ export function useProfileByIdentifier(identifier: string | undefined) {
       .select("*")
       .eq("id", identifier)
       .single()
-      .then(({ data, error: err }) => {
-        setProfile((data as Profile) ?? null);
+      .then(({ data, error: err }: { data: any; error: any }) => {
+        setProfile((data as unknown as Profile | null) ?? null);
         setError(err?.message ?? null);
         setLoading(false);
       });

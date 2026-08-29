@@ -42,13 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-    setProfile((data as Profile) ?? null);
+    setProfile((data as unknown as Profile | null) ?? null);
   };
 
   useEffect(() => {
     let cleanupHeartbeat: (() => void) | undefined;
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       setSession(data.session);
       if (data.session?.user) {
         fetchProfile(data.session.user.id);
@@ -57,17 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      if (newSession?.user) {
-        fetchProfile(newSession.user.id);
-        cleanupHeartbeat?.();
-        cleanupHeartbeat = startPresenceHeartbeat(newSession.user.id);
-      } else {
-        setProfile(null);
-        cleanupHeartbeat?.();
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event: unknown, newSession: Session | null) => {
+        setSession(newSession);
+        if (newSession?.user) {
+          fetchProfile(newSession.user.id);
+          cleanupHeartbeat?.();
+          cleanupHeartbeat = startPresenceHeartbeat(newSession.user.id);
+        } else {
+          setProfile(null);
+          cleanupHeartbeat?.();
+        }
       }
-    });
+    );
 
     return () => {
       listener.subscription.unsubscribe();
