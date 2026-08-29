@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: #05070d;
+    background-image: theme("backgroundImage.dossier-glow");
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(0, 229, 199, 0.35);
+    color: #fff;
+  }
+
+  /* Scrollbar — tactical, thin */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1c2740;
+    border-radius: 999px;
+  }
+
+  /* RTL / LTR aware logical spacing handled mostly via Tailwind's
+     rtl: variant + logical utilities (ms-/me-/ps-/pe-). Component code
+     should prefer those over left-/right- prefixed utilities. */
+  [dir="rtl"] .flip-icon {
+    transform: scaleX(-1);
+  }
+
+  :focus-visible {
+    outline: 2px solid #00e5c7;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Signature element: the "dossier card" — a tactical ID-slip card
+     used for player profiles and duel tickets. Diagonal clipped corner
+     + hairline border + faint scanline sweep on hover. */
+  .dossier-card {
+    @apply relative overflow-hidden rounded-card border border-line bg-panel/70 backdrop-blur-xl shadow-glass;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 18px),
+      calc(100% - 18px) 100%,
+      0 100%
+    );
+  }
+  [dir="rtl"] .dossier-card {
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% 100%,
+      18px 100%,
+      0 calc(100% - 18px)
+    );
+  }
+
+  .dossier-card::after {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 top-0 h-8 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(180deg, rgba(0, 229, 199, 0.25), transparent);
+  }
+  .dossier-card:hover::after {
+    @apply opacity-100 animate-scanline;
+  }
+
+  .glass-panel {
+    @apply rounded-card border border-line bg-panel/60 backdrop-blur-xl shadow-glass;
+  }
+
+  .neon-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-cyan/40 bg-cyan/10 px-4 py-2.5 text-sm font-semibold text-cyan transition-all hover:bg-cyan/20 hover:shadow-neon active:scale-[0.98];
+  }
+
+  .neon-btn-violet {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-violet/40 bg-violet/10 px-4 py-2.5 text-sm font-semibold text-violet-soft transition-all hover:bg-violet/20 hover:shadow-neon-violet active:scale-[0.98];
+  }
+
+  .ghost-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-ink-muted transition-all hover:border-cyan/30 hover:text-ink active:scale-[0.98];
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-line bg-white/[0.03] px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none transition-colors focus:border-cyan/50;
+  }
+
+  .eyebrow {
+    @apply font-display text-xs font-semibold uppercase tracking-[0.2em] text-cyan/80;
+  }
+
+  .status-dot {
+    @apply inline-block h-2.5 w-2.5 rounded-full;
+  }
+  .status-dot--online {
+    @apply bg-win shadow-[0_0_8px_rgba(45,212,167,0.8)];
+  }
+  .status-dot--offline {
+    @apply bg-ink-faint;
+  }
+}
