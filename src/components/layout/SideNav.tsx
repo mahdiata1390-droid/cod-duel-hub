@@ -15,12 +15,12 @@ const items = [
 
 export function SideNav() {
   const { t } = useTranslation();
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
 
   return (
     <aside className="sticky top-[65px] hidden h-[calc(100vh-65px)] w-56 shrink-0 flex-col justify-between border-e border-line px-3 py-4 md:flex">
       <nav className="flex flex-col gap-1">
-        {items.map((item) => (
+        {[...items, ...(isAdmin ? [{ to: "/admin", icon: "🛡️", key: "nav.admin" }] : [])].map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

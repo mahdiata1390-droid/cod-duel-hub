@@ -3,6 +3,7 @@ import { I18nProvider } from "@/i18n";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { AdminRoute } from "@/components/layout/AdminRoute";
 
 import Home from "@/pages/Home";
 import Players from "@/pages/Players";
@@ -18,6 +19,7 @@ import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/NotFound";
+import Admin from "@/pages/Admin";
 
 export default function App() {
   return (
@@ -80,6 +82,14 @@ export default function App() {
                   <ProtectedRoute>
                     <Notifications />
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin"
+                element={
+                  <AdminRoute>
+                    <Admin />
+                  </AdminRoute>
                 }
               />
 

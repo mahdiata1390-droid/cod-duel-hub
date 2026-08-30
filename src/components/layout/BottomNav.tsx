@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "@/i18n";
+import { useAuth } from "@/contexts/AuthContext";
 
 const primaryItems = [
   { to: "/", icon: "🏠", key: "nav.home" },
@@ -19,6 +20,7 @@ const moreItems = [
 
 export function BottomNav() {
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
   return (
@@ -54,7 +56,7 @@ export function BottomNav() {
       {moreOpen && (
         <div className="border-t border-line bg-void/95 px-2 py-2">
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2 text-xs">
-            {moreItems.map((item) => (
+            {[...moreItems, ...(isAdmin ? [{ to: "/admin", icon: "🛡️", key: "nav.admin" }] : [])].map((item) => (
               <Link
                 key={item.to}
                 to={item.to}

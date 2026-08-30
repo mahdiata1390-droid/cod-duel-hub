@@ -14,6 +14,8 @@ export type DuelStatus =
   | "disputed";
 
 export type FriendRequestStatus = "pending" | "accepted" | "rejected";
+export type AccountStatus = "active" | "suspended" | "banned";
+export type AdminRole = "owner" | "admin";
 
 export type NotificationType =
   | "friend_request"
@@ -42,6 +44,38 @@ export interface Profile {
   show_duel_history: boolean;
   last_seen_at: string; // ISO timestamp — presence on THIS site only
   created_at: string;
+  account_status: AccountStatus;
+  suspended_until: string | null;
+}
+
+export interface AdminRoleRow {
+  user_id: string;
+  role: AdminRole;
+  created_at: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  admin_user_id: string;
+  action_type: string;
+  target_user_id: string | null;
+  target_duel_id: string | null;
+  previous_value: Record<string, unknown> | null;
+  new_value: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AdminDuel {
+  id: string;
+  challenger_id: string;
+  opponent_id: string;
+  status: DuelStatus;
+  challenger_score: number | null;
+  opponent_score: number | null;
+  created_at: string;
+  updated_at: string;
+  challenger_username: string;
+  opponent_username: string;
 }
 
 export interface FriendRequest {
@@ -122,6 +156,12 @@ export type Database = {
         Update: Partial<Profile>;
         Relationships: [];
       };
+      admin_roles: {
+        Row: AdminRoleRow;
+        Insert: Partial<AdminRoleRow>;
+        Update: Partial<AdminRoleRow>;
+        Relationships: [];
+      };
       friend_requests: {
         Row: FriendRequest;
         Insert: Partial<FriendRequest>;
@@ -170,12 +210,46 @@ export type Database = {
         Update: Partial<AppNotification>;
         Relationships: [];
       };
+      admin_audit_logs: {
+        Row: AdminAuditLog;
+        Insert: Partial<AdminAuditLog>;
+        Update: Partial<AdminAuditLog>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       start_direct_conversation: {
         Args: { other_user_id: string };
         Returns: string;
+      };
+      is_account_active: {
+        Args: { target_user_id?: string };
+        Returns: boolean;
+      };
+      is_admin: {
+        Args: { target_user_id?: string };
+        Returns: boolean;
+      };
+      admin_list_users: {
+        Args: Record<string, never>;
+        Returns: Profile[];
+      };
+      admin_list_duels: {
+        Args: Record<string, never>;
+        Returns: AdminDuel[];
+      };
+      admin_set_user_status: {
+        Args: { target_user_id: string; new_status: AccountStatus; new_suspended_until?: string | null };
+        Returns: undefined;
+      };
+      admin_update_duel_result: {
+        Args: { target_duel_id: string; new_challenger_score: number; new_opponent_score: number };
+        Returns: undefined;
+      };
+      admin_cancel_duel: {
+        Args: { target_duel_id: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

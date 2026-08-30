@@ -23,6 +23,7 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  isAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -50,12 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         setProfile(null);
+        setIsAdmin(false);
         return;
       }
 
       setProfile((data as unknown as Profile | null) ?? null);
+      const { data: adminData } = await supabase.rpc("is_admin");
+      setIsAdmin(Boolean(adminData));
     } catch {
       setProfile(null);
+      setIsAdmin(false);
     }
   };
 
@@ -80,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           cleanupHeartbeat = startPresenceHeartbeat(newSession.user.id);
         } else {
           setProfile(null);
+          setIsAdmin(false);
           cleanupHeartbeat?.();
         }
       }
@@ -147,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       profile,
+      isAdmin,
       loading,
       signIn,
       signUp,
@@ -154,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword,
       refreshProfile,
     }),
-    [session, profile, loading]
+    [session, profile, isAdmin, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
