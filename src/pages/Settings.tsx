@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/i18n";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,10 +7,15 @@ import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 
 export default function Settings() {
   const { t } = useTranslation();
-  const { profile, user, refreshProfile, signOut } = useAuth();
+  const { profile, user, refreshProfile, signOut, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [showDuelHistory, setShowDuelHistory] = useState(profile?.show_duel_history ?? true);
   const [saved, setSaved] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setShowDuelHistory(profile?.show_duel_history ?? true);
+  }, [profile?.show_duel_history]);
 
   if (!user || !profile) return null;
 
@@ -19,8 +24,23 @@ export default function Settings() {
     setShowDuelHistory(next);
     await supabase.from("profiles").update({ show_duel_history: next }).eq("id", user.id);
     await refreshProfile();
+    setStatusMessage(t("settings.saved"));
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => {
+      setSaved(false);
+      setStatusMessage(null);
+    }, 2000);
+  };
+
+  const handleResetPassword = async () => {
+    if (!user.email) return;
+    const { error } = await resetPassword(user.email);
+    setStatusMessage(error ?? t("settings.saved"));
+    setSaved(!error);
+    setTimeout(() => {
+      setSaved(false);
+      setStatusMessage(null);
+    }, 2400);
   };
 
   const handleLogout = async () => {
@@ -62,15 +82,12 @@ export default function Settings() {
             />
           </button>
         </label>
-        {saved && <p className="text-xs text-win">{t("settings.saved")}</p>}
+        {(saved || statusMessage) && <p className="text-xs text-win">{statusMessage || t("settings.saved")}</p>}
       </section>
 
       <section className="glass-panel flex flex-col gap-4 p-4">
         <h2 className="text-sm font-semibold text-ink-muted">{t("settings.section.account")}</h2>
-        <button
-          className="ghost-btn w-full justify-start"
-          onClick={() => user.email && supabase.auth.resetPasswordForEmail(user.email)}
-        >
+        <button className="ghost-btn w-full justify-start" onClick={handleResetPassword}>
           {t("settings.changePassword")}
         </button>
         <button onClick={handleLogout} className="ghost-btn w-full justify-start !text-alert-soft">

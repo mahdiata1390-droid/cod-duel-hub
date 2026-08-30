@@ -189,10 +189,6 @@ begin
 end;
 $$;
 
--- Enable Realtime on messages + notifications (safe to re-run).
-alter publication supabase_realtime add table public.messages;
-alter publication supabase_realtime add table public.notifications;
-
 -- ---------------------------------------------------------------------
 -- duels / duel_confirmations
 -- ---------------------------------------------------------------------
@@ -431,3 +427,27 @@ drop trigger if exists on_new_message_notify on public.messages;
 create trigger on_new_message_notify
   after insert on public.messages
   for each row execute function public.notify_new_message();
+
+-- Enable Realtime on messages + notifications in a re-runnable way.
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'messages'
+  ) then
+    alter publication supabase_realtime add table public.messages;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'notifications'
+  ) then
+    alter publication supabase_realtime add table public.notifications;
+  end if;
+end $$;

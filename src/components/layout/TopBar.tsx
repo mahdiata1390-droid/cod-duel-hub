@@ -39,6 +39,13 @@ export function TopBar() {
                   </span>
                 )}
               </Link>
+              <Link
+                to="/settings"
+                className="grid h-9 w-9 place-items-center rounded-lg border border-line text-ink-muted transition-colors hover:border-cyan/30 hover:text-ink"
+                aria-label={t("nav.settings")}
+              >
+                ⚙️
+              </Link>
               <Link to="/profile" className="hidden sm:block">
                 <Avatar
                   src={profile?.avatar_url}
@@ -50,11 +57,11 @@ export function TopBar() {
               </Link>
             </>
           ) : (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Link to="/login" className="ghost-btn !px-3 !py-2">
+            <div className="flex items-center gap-2">
+              <Link to="/login" className="ghost-btn !px-3 !py-2 text-xs sm:text-sm">
                 {t("nav.login")}
               </Link>
-              <Link to="/register" className="neon-btn !px-3 !py-2">
+              <Link to="/register" className="neon-btn !px-3 !py-2 text-xs sm:text-sm">
                 {t("nav.register")}
               </Link>
             </div>

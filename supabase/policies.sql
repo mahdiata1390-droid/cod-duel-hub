@@ -110,9 +110,9 @@ create policy "Members can view conversation membership"
     )
   );
 
-create policy "Users can add themselves or invitees to a new conversation"
+create policy "Users can add themselves to a conversation"
   on public.conversation_members for insert
-  with check (auth.uid() is not null);
+  with check (auth.uid() = user_id);
 
 create policy "Members can update their own membership row"
   on public.conversation_members for update
