@@ -41,7 +41,6 @@ export interface Profile {
   draws: number;
   total_duels: number;
   xp: number;
-  show_duel_history: boolean;
   last_seen_at: string; // ISO timestamp — presence on THIS site only
   created_at: string;
   account_status: AccountStatus;

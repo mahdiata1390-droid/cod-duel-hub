@@ -93,9 +93,7 @@ export default function PlayerProfile() {
 
       <div>
         <h2 className="mb-3 font-display text-lg font-bold text-ink">{t("profile.duelHistory")}</h2>
-        {!profile.show_duel_history && !isSelf ? (
-          <EmptyState message={t("profile.duelHistory.private")} icon="🔒" />
-        ) : relevantDuels.length === 0 ? (
+        {relevantDuels.length === 0 ? (
           <EmptyState message={t("duels.empty.history")} icon="⚔️" />
         ) : (
           <div className="flex flex-col gap-2">

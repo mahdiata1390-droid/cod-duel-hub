@@ -26,7 +26,6 @@ create table if not exists public.profiles (
   draws integer not null default 0,
   total_duels integer not null default 0,
   xp integer not null default 0,
-  show_duel_history boolean not null default true,
   last_seen_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   account_status text not null default 'active'
@@ -34,6 +33,7 @@ create table if not exists public.profiles (
   suspended_until timestamptz
 );
 
+alter table public.profiles drop column if exists show_duel_history;
 alter table public.profiles add column if not exists account_status text not null default 'active';
 alter table public.profiles add column if not exists suspended_until timestamptz;
 do $$
