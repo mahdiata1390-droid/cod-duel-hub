@@ -36,6 +36,7 @@ export interface Profile {
   bio: string | null;
   rank: string | null;
   country: string | null;
+  is_ai_player: boolean;
   wins: number;
   losses: number;
   draws: number;

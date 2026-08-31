@@ -21,6 +21,7 @@ create table if not exists public.profiles (
   bio text,
   rank text,
   country text,
+  is_ai_player boolean not null default false,
   wins integer not null default 0,
   losses integer not null default 0,
   draws integer not null default 0,
@@ -36,6 +37,7 @@ create table if not exists public.profiles (
 alter table public.profiles drop column if exists show_duel_history;
 alter table public.profiles add column if not exists account_status text not null default 'active';
 alter table public.profiles add column if not exists suspended_until timestamptz;
+alter table public.profiles add column if not exists is_ai_player boolean not null default false;
 do $$
 begin
   if not exists (
@@ -80,6 +82,7 @@ begin
     bio,
     rank,
     country,
+    is_ai_player,
     last_seen_at
   )
   values (
@@ -91,6 +94,7 @@ begin
     null,
     null,
     null,
+    coalesce((new.raw_user_meta_data ->> 'is_ai_player')::boolean, false),
     now()
   )
   on conflict (id) do nothing;
@@ -278,6 +282,36 @@ create table if not exists public.duel_confirmations (
   created_at timestamptz not null default now(),
   constraint unique_confirmation_per_user unique (duel_id, user_id)
 );
+
+create or replace function public.validate_duel_participants()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  challenger_ai boolean;
+  opponent_ai boolean;
+begin
+  select is_ai_player into challenger_ai from public.profiles where id = new.challenger_id;
+  select is_ai_player into opponent_ai from public.profiles where id = new.opponent_id;
+
+  if challenger_ai is null or opponent_ai is null then
+    raise exception 'duel participants must exist in profiles';
+  end if;
+
+  if challenger_ai is distinct from opponent_ai then
+    raise exception 'real-vs-ai duels are not allowed; only real-vs-real and ai-vs-ai are permitted';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_duel_participants_validation on public.duels;
+create trigger on_duel_participants_validation
+  before insert or update on public.duels
+  for each row execute function public.validate_duel_participants();
 
 -- ---------------------------------------------------------------------
 -- Trigger: once BOTH players confirm matching scores, mark the duel

@@ -51,6 +51,7 @@ create policy "Users can update their own profile"
     and draws = (select draws from public.profiles where id = auth.uid())
     and total_duels = (select total_duels from public.profiles where id = auth.uid())
     and xp = (select xp from public.profiles where id = auth.uid())
+    and is_ai_player = (select is_ai_player from public.profiles where id = auth.uid())
     and account_status = (select account_status from public.profiles where id = auth.uid())
     and suspended_until is not distinct from (select suspended_until from public.profiles where id = auth.uid())
   );
@@ -158,7 +159,21 @@ create policy "Participants can view their duels"
 
 create policy "Users can challenge others as themselves"
   on public.duels for insert
-  with check (public.is_account_active(auth.uid()) and auth.uid() = challenger_id and challenger_id <> opponent_id);
+  with check (
+    public.is_account_active(auth.uid())
+    and auth.uid() = challenger_id
+    and challenger_id <> opponent_id
+    and (
+      (
+        (select is_ai_player from public.profiles where id = auth.uid()) = false
+        and (select is_ai_player from public.profiles where id = opponent_id) = false
+      )
+      or (
+        (select is_ai_player from public.profiles where id = auth.uid()) = true
+        and (select is_ai_player from public.profiles where id = opponent_id) = true
+      )
+    )
+  );
 
 create policy "Participants can update duel status (not scores directly)"
   on public.duels for update
