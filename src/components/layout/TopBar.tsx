@@ -12,17 +12,17 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-void/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <Link to="/" className="flex items-center gap-2">
+      <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-4 px-4 py-3 md:px-6">
+        <Link to="/" className="flex min-w-0 items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg border border-cyan/40 bg-cyan/10 font-display text-base font-bold text-cyan">
             ⚔
           </span>
-          <span className="font-display text-lg font-bold tracking-wide text-ink">
+          <span className="truncate font-display text-lg font-bold tracking-wide text-ink">
             {t("app.name")}
           </span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <LanguageSwitcher />
 
           {user ? (
